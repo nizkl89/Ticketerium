@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticketerium</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+  <style>
+    /* Additional styles for enhanced login page */
+    body,
+    html {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .navbar {
+      background-color: var(--neutral-white);
+      border-bottom: 1px solid var(--neutral-light);
+      height: 110px;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+    }
+
+    .navbar-brand i {
+      margin-right: 8px;
+      font-size: 1.75rem;
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .tagline {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .network-badge {
+      background-color: var(--primary);
+      color: var(--neutral-white);
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-left: 1rem;
+      white-space: nowrap;
+    }
+
+    .login-container {
+      display: flex;
+      height: calc(100vh - 150px);
+      width: 100%;
+      margin-top: 110px;
+      z-index: 1;
+    }
+
+    .login-left {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: var(--neutral-light);
+      position: relative;
+    }
+
+    .login-right {
+      flex: 1;
+      background-image: linear-gradient(rgba(73, 69, 255, 0.3), rgba(73, 69, 255, 0.3)),
+        url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      z-index: 0;
+    }
+
+    .login-card {
+      max-width: 500px;
+      width: 90%;
+      padding: 3rem;
+      animation: fadeIn 1s ease-in;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .login-card:hover {
+      box-shadow: 0 8px 24px rgba(73, 69, 255, 0.3);
+    }
+
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .login-title {
+      margin-bottom: 0;
+      font-size: 2rem;
+    }
+
+    .login-text,
+    .login-error {
+      max-width: 80%;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    .btn-lg {
+      font-size: 1.25rem;
+      padding: 0.75rem 1.5rem;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 40px;
+      background-color: var(--neutral-white);
+      border-top: 1px solid var(--neutral-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      z-index: 1000;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      margin: 0 10px;
+      font-size: 0.85rem;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .login-right {
+        display: none;
+      }
+
+      .login-left {
+        flex: 1;
+      }
+
+      .login-text,
+      .login-error {
+        max-width: 90%;
+      }
+
+      .navbar-brand {
+        font-size: 1.25rem;
+      }
+
+      .navbar-brand i {
+        font-size: 1.5rem;
+      }
+
+      .tagline {
+        font-size: 0.85rem;
+      }
+
+      .network-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+
+      .login-card {
+        max-width: 400px;
+        padding: 2rem;
+      }
+
+      .login-title {
+        font-size: 1.75rem;
+      }
+
+      .login-text,
+      .login-error {
+        font-size: 1rem;
+      }
+
+      .btn-lg {
+        font-size: 1.1rem;
+        padding: 0.6rem 1.2rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .tagline {
+        display: none;
+      }
+
+      .network-badge {
+        margin-left: 0.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-ticket-alt"></i> Ticketerium
+      </a>
+      <div class="navbar-right">
+        <span class="tagline">Secure, Decentralized Event Ticketing</span>
+        <span class="network-badge">Using Sepolia Testnet</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="login-container">
+    <div class="login-left">
+      <div class="card login-card">
+        <div class="card-body">
+          <h1 class="login-title">Event Ticketing DApp</h1>
+          <p class="login-text">Connect your MetaMask wallet to access secure, blockchain-based ticketing</p>
+          <button class="btn btn-primary btn-lg" onclick="connectWallet()">
+            <i class="fab fa-ethereum me-2"></i> Connect Wallet
+          </button>
+          <p class="login-error d-none">Please install MetaMask to continue</p>
+        </div>
+      </div>
+    </div>
+    <div class="login-right">
+      <canvas class="particle-canvas" id="particleCanvas"></canvas>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <span>COMP4541 project by Kingsley Lam</span>
+      <a href="https://github.com/nizkl89/Ticketerium" target="_blank">GitHub</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function connectWallet() {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          window.location.href = 'dashboard.html';
+        } catch (error) {
+          console.error('Wallet connection failed:', error);
+          document.querySelector('.login-error').classList.remove('d-none');
+        }
+      } else {
+        document.querySelector('.login-error').classList.remove('d-none');
+      }
+    }
+
+    // Particle animation for right half
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth / 2;
+    canvas.height = window.innerHeight - 150;
+
+    const particles = [];
+    const particleCount = 50;
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 0.5 - 0.25;
+        this.speedY = Math.random() * 0.5 - 0.25;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+      }
+
+      draw() {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+
+    initParticles();
+    animateParticles();
+
+    // Resize canvas on window resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth / 2;
+      canvas.height = window.innerHeight - 150;
+    });
+  </script>
+</body>
+
+</html>

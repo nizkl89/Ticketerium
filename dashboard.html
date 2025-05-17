@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Ticketing - Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts: Roboto -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Web3.js -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.7.3/dist/web3.min.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Toggle Button -->
+  <button class="btn toggle-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar"
+    aria-controls="sidebar">
+    <i class="bi bi-list"></i>
+  </button>
+
+  <!-- Sidebar Drawer -->
+  <div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="sidebarLabel">Event Ticketing</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <nav class="nav flex-column">
+        <a class="nav-link active" href="#" data-section="events"><i class="bi bi-calendar-event me-2"></i>Browse
+          Events</a>
+        <a class="nav-link create-event-link" href="#" data-section="createEvent"><i
+            class="bi bi-plus-circle me-2"></i>Create Event</a>
+        <a class="nav-link" href="#" data-section="organizerControls"><i class="bi bi-gear me-2"></i>Organizer
+          Controls</a>
+        <a class="nav-link" href="#" data-section="verifyTicket"><i class="bi bi-check-circle me-2"></i>Verify
+          Ticket</a>
+        <a class="nav-link" href="#" data-section="transferTicket"><i class="bi bi-arrow-left-right me-2"></i>Transfer
+          Ticket</a>
+        <a class="nav-link" href="#" data-section="refundTicket"><i class="bi bi-arrow-counterclockwise me-2"></i>Refund
+          Ticket</a>
+        <a class="nav-link" href="#" data-section="myTickets"><i class="bi bi-ticket me-2"></i>My Tickets</a>
+        <a class="nav-link" href="index.html" id="logoutLink"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <h1 class="mb-4">Ticketerium</h1>
+    <p id="accountStatus" class="mb-3 badge"></p>
+
+    <!-- Events Section -->
+    <div id="events" class="section">
+      <div class="card">
+        <div class="card-header">Browse Events</div>
+        <div class="card-body" id="eventsList"></div>
+      </div>
+    </div>
+
+    <!-- Create Event Section -->
+    <div id="createEvent" class="section d-none">
+      <div class="card">
+        <div class="card-header">Create Event</div>
+        <div class="card-body">
+          <form id="createEventForm">
+            <div class="mb-3">
+              <label for="eventName" class="form-label">Event Name</label>
+              <input type="text" class="form-control" id="eventName" required aria-describedby="eventNameHelp">
+              <div id="eventNameHelp" class="form-text">Enter a unique name for your event.</div>
+            </div>
+            <div class="mb-3">
+              <label for="eventDescription" class="form-label">Description</label>
+              <textarea class="form-control" id="eventDescription" required rows="4"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="eventLocation" class="form-label">Location</label>
+              <input type="text" class="form-control" id="eventLocation" required>
+            </div>
+            <div class="mb-3">
+              <label for="eventDate" class="form-label">Date and Time</label>
+              <input type="datetime-local" class="form-control" id="eventDate" required>
+            </div>
+            <div class="mb-3">
+              <label for="ticketPrice" class="form-label">Ticket Price (ETH)</label>
+              <input type="number" step="0.001" class="form-control" id="ticketPrice" required>
+            </div>
+            <div class="mb-3">
+              <label for="totalSupply" class="form-label">Total Tickets</label>
+              <input type="number" class="form-control" id="totalSupply" required>
+            </div>
+            <div class="mb-3">
+              <label for="resalePriceCap" class="form-label">Resale Price Cap (ETH)</label>
+              <input type="number" step="0.001" class="form-control" id="resalePriceCap" required>
+            </div>
+            <div class="mb-3">
+              <label for="transferable" class="form-label">Allow Transfers</label>
+              <select class="form-control" id="transferable" required>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create Event</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organizer Controls Section -->
+    <div id="organizerControls" class="section d-none">
+      <div class="card">
+        <div class="card-header">Organizer Controls</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="cancelEventId" class="form-label">Cancel Event ID</label>
+            <input type="number" class="form-control" id="cancelEventId" required>
+            <button class="btn btn-danger mt-2 w-100" id="cancelEvent">Cancel Event</button>
+          </div>
+          <div class="mb-3">
+            <button class="btn btn-warning w-100" id="withdrawFunds">Withdraw Funds</button>
+          </div>
+          <div class="mb-3 d-flex gap-2">
+            <button class="btn btn-secondary w-50" id="pauseContract">Pause Contract</button>
+            <button class="btn btn-secondary w-50" id="unpauseContract">Unpause Contract</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verify Ticket Section -->
+    <div id="verifyTicket" class="section d-none">
+      <div class="card">
+        <div class="card-header">Verify Ticket</div>
+        <div class="card-body">
+          <form id="verifyTicketForm">
+            <div class="mb-3">
+              <label for="verifyEventId" class="form-label">Event ID</label>
+              <input type="number" class="form-control" id="verifyEventId" required>
+            </div>
+            <div class="mb-3">
+              <label for="verifyAttendee" class="form-label">Attendee Address</label>
+              <input type="text" class="form-control" id="verifyAttendee" required>
+            </div>
+            <div class="mb-3">
+              <label for="verifyTicketId" class="form-label">Ticket ID</label>
+              <input type="number" class="form-control" id="verifyTicketId" required>
+            </div>
+            <button type="submit" class="btn btn-info w-100">Verify Ticket</button>
+          </form>
+          <p id="verifyResult" class="mt-2"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer Ticket Section -->
+    <div id="transferTicket" class="section d-none">
+      <div class="card">
+        <div class="card-header">Transfer Ticket</div>
+        <div class="card-body">
+          <form id="transferTicketForm">
+            <div class="mb-3">
+              <label for="transferEventId" class="form-label">Event ID</label>
+              <input type="number" class="form-control" id="transferEventId" required>
+            </div>
+            <div class="mb-3">
+              <label for="transferTicketId" class="form-label">Ticket ID</label>
+              <input type="number" class="form-control" id="transferTicketId" required>
+            </div>
+            <div class="mb-3">
+              <label for="transferTo" class="form-label">Recipient Address</label>
+              <input type="text" class="form-control" id="transferTo" required>
+            </div>
+            <div class="mb-3">
+              <label for="resalePrice" class="form-label">Resale Price (ETH)</label>
+              <input type="number" step="0.001" class="form-control" id="resalePrice" required>
+            </div>
+            <button type="submit" class="btn btn-warning w-100">Transfer Ticket</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Refund Ticket Section -->
+    <div id="refundTicket" class="section d-none">
+      <div class="card">
+        <div class="card-header">Refund Ticket</div>
+        <div class="card-body">
+          <form id="refundTicketForm">
+            <div class="mb-3">
+              <label for="refundEventId" class="form-label">Event ID</label>
+              <input type="number" class="form-control" id="refundEventId" required>
+            </div>
+            <div class="mb-3">
+              <label for="refundTicketId" class="form-label">Ticket ID</label>
+              <input type="number" class="form-control" id="refundTicketId" required>
+            </div>
+            <button type="submit" class="btn btn-warning w-100">Refund Ticket</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Tickets Section -->
+    <div id="myTickets" class="section d-none">
+      <div class="card">
+        <div class="card-header">My Tickets</div>
+        <div class="card-body">
+          <div id="ticketsList" class="ticket-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS and Popper.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+  <script>
+    // Contract configuration
+    const contractAddress = "0xc3c4dd33aa7727158a18dfcebbaa4de65616b3ab";
+    const contractABI = [
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "cancelEvent",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_description",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_location",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_date",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_totalSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_resalePriceCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "_transferable",
+            "type": "bool"
+          }
+        ],
+        "name": "createEvent",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "EventCanceled",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "date",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketPrice",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "totalSupply",
+            "type": "uint256"
+          }
+        ],
+        "name": "EventCreated",
+        "type": "event"
+      },
+      {
+        "inputs": [],
+        "name": "pause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "purchaseTicket",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_quantity",
+            "type": "uint256"
+          }
+        ],
+        "name": "purchaseTickets",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "refundTicket",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          }
+        ],
+        "name": "TicketPurchased",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          }
+        ],
+        "name": "TicketRefunded",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          }
+        ],
+        "name": "TicketTransferred",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "bool",
+            "name": "isValid",
+            "type": "bool"
+          }
+        ],
+        "name": "TicketVerified",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "_to",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_resalePrice",
+            "type": "uint256"
+          }
+        ],
+        "name": "transferTicket",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "unpause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "_attendee",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "verifyTicket",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "eventCount",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "events",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "date",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ticketPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ticketsSold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "resalePriceCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferable",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "canceled",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "exists",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "getEventDetails",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "date",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ticketPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ticketsSold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "resalePriceCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferable",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "canceled",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "_user",
+            "type": "address"
+          }
+        ],
+        "name": "getUserTickets",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "paused",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "ticketOwners",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "ticketUsed",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "userTickets",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
+    let web3, contract, account, contractOwner;
+
+    // Initialize Web3 and contract
+    async function initWeb3() {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        try {
+          const chainId = await web3.eth.getChainId();
+          console.log("Chain ID:", chainId);
+          if (chainId !== 11155111) { // Sepolia Testnet
+            showAlert("Please switch to Sepolia Testnet in MetaMask", "warning");
+            window.location.href = 'index.html';
+            return;
+          }
+          // Actively request accounts to ensure connection prompt
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts.length === 0) {
+            showAlert("Please connect MetaMask", "warning");
+            window.location.href = 'index.html';
+            return;
+          }
+          account = accounts[0];
+          contract = new web3.eth.Contract(contractABI, contractAddress);
+          contractOwner = await contract.methods.owner().call();
+          console.log("Contract owner:", contractOwner);
+
+          // Determine role and update account status
+          const isOwner = account.toLowerCase() === contractOwner.toLowerCase();
+          const role = isOwner ? 'Organizer' : 'Attendee';
+          const badgeClass = isOwner ? 'bg-success' : 'bg-primary';
+          const shortAccount = `${account.slice(0, 6)}...${account.slice(-4)}`;
+          const accountStatus = document.getElementById('accountStatus');
+          accountStatus.className = `mb-3 badge ${badgeClass}`;
+          accountStatus.innerText = `Connected: ${role} (${shortAccount})`;
+          accountStatus.setAttribute('aria-label', `Connected as ${role} with account ${shortAccount}`);
+          console.log("Web3 initialized, account:", account, "role:", role);
+
+          // Hide Create Event for non-owners
+          if (!isOwner) {
+            document.querySelector('.create-event-link').style.display = 'none';
+            document.getElementById('createEvent').style.display = 'none';
+            console.log("Create Event hidden for non-owner");
+          } else {
+            console.log("Create Event visible for owner");
+          }
+
+          loadEvents();
+          initSidebar();
+        } catch (error) {
+          console.error("Initialization error:", error);
+          showAlert("Failed to initialize DApp: " + error.message, "danger");
+          window.location.href = 'index.html';
+        }
+      } else {
+        showAlert("Please install MetaMask", "warning");
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Disconnect wallet
+    async function disconnectWallet() {
+      try {
+        if (window.ethereum && window.ethereum.isMetaMask) {
+          // Revoke MetaMask permissions to force reconnection
+          await window.ethereum.request({
+            method: 'wallet_revokePermissions',
+            params: [{ eth_accounts: {} }],
+          });
+          web3 = null;
+          account = null;
+          contract = null;
+          console.log("Logout successful, permissions revoked");
+        }
+      } catch (error) {
+        console.error("Error disconnecting wallet:", error);
+        showAlert("Failed to disconnect wallet: " + error.message, "warning");
+      }
+    }
+
+    // Initialize sidebar
+    function initSidebar() {
+      console.log("Initializing sidebar");
+      const offcanvasElement = document.getElementById('sidebar');
+      const toggleBtn = document.querySelector('.toggle-btn');
+      const content = document.querySelector('.content');
+      if (!offcanvasElement || !toggleBtn) {
+        console.error("Sidebar or toggle button not found");
+        showAlert("Sidebar initialization failed", "danger");
+        return;
+      }
+      const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
+
+      toggleBtn.addEventListener('click', () => {
+        console.log("Toggle button clicked, hiding button");
+        toggleBtn.style.display = 'none';
+      });
+
+      offcanvasElement.addEventListener('hidden.bs.offcanvas', () => {
+        console.log("Sidebar hidden, showing toggle button");
+        toggleBtn.style.display = 'flex';
+        content.classList.remove('sidebar-open');
+      });
+
+      offcanvasElement.addEventListener('shown.bs.offcanvas', () => {
+        console.log("Sidebar fully shown");
+        content.classList.add('sidebar-open');
+      });
+    }
+
+    // Show alert messages
+    function showAlert(message, type) {
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} alert-dismissible fade show`;
+      alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.querySelector('.content').prepend(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
+
+    // Load all events
+    async function loadEvents() {
+      const eventsList = document.getElementById('eventsList');
+      eventsList.innerHTML = '<p>Loading events...</p>';
+      try {
+        const eventCount = await contract.methods.eventCount().call();
+        console.log("Event count:", eventCount);
+        if (eventCount == 0) {
+          eventsList.innerHTML = '<p>No events found. Create an event to get started!</p>';
+          return;
+        }
+        let eventsHTML = '<div class="row">';
+        for (let i = 1; i <= eventCount; i++) {
+          try {
+            const event = await contract.methods.getEventDetails(i).call();
+            console.log(`Event ${i}:`, event);
+            eventsHTML += `
+              <div class="col-md-4 mb-4">
+                <div class="card event-card h-100">
+                  <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                       class="card-img-top" 
+                       alt="${event.name}" 
+                       onerror="this.src='assets/event-placeholder.jpg'">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Event ID: ${i} - ${event.name}</h5>
+                    <p class="card-text">
+                      <strong>Date:</strong> ${new Date(event.date * 1000).toLocaleString()}<br>
+                      <strong>Price:</strong> ${web3.utils.fromWei(event.ticketPrice, 'ether')} ETH<br>
+                      <strong>Tickets:</strong> ${event.totalSupply - event.ticketsSold}/${event.totalSupply}<br>
+                      <strong>Status:</strong> ${event.canceled ? 'Canceled' : 'Active'}
+                    </p>
+                    <div class="mb-3">
+                      <label for="quantity-${i}" class="form-label">Quantity</label>
+                      <input type="number" class="form-control" id="quantity-${i}" min="1" value="1" aria-label="Ticket quantity">
+                    </div>
+                    <button class="btn btn-primary w-100 buy-ticket mt-auto" 
+                            data-event-id="${i}" 
+                            ${event.canceled ? 'disabled' : ''} 
+                            aria-label="Buy tickets for ${event.name}">
+                      <i class="bi bi-ticket-fill me-2"></i>Buy Tickets
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          } catch (error) {
+            console.error(`Error loading event ${i}:`, error);
+          }
+        }
+        eventsHTML += '</div>';
+        eventsList.innerHTML = eventsHTML;
+        if (eventsList.querySelector('.row').children.length === 0) {
+          eventsList.innerHTML = '<p>No valid events found</p>';
+        }
+        addBuyTicketListeners();
+      } catch (error) {
+        console.error("Error loading events:", error);
+        eventsList.innerHTML = '<p>Error loading events: ' + error.message + '</p>';
+      }
+    }
+
+    // Add listeners for buy ticket buttons
+    function addBuyTicketListeners() {
+      document.querySelectorAll('.buy-ticket').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const eventId = e.target.dataset.eventId;
+          const quantity = document.getElementById(`quantity-${eventId}`).value;
+          try {
+            const event = await contract.methods.getEventDetails(eventId).call();
+            const totalPrice = BigInt(event.ticketPrice) * BigInt(quantity);
+            await contract.methods.purchaseTickets(eventId, quantity)
+              .send({ from: account, value: totalPrice.toString() });
+            showAlert("Tickets purchased successfully!", "success");
+            loadEvents();
+            loadTickets();
+          } catch (error) {
+            console.error("Purchase error:", error);
+            showAlert("Failed to purchase tickets: " + error.message, "danger");
+          }
+        });
+      });
+    }
+
+    // Load user's tickets
+    async function loadTickets() {
+      const ticketsList = document.getElementById('ticketsList');
+      ticketsList.innerHTML = '<p>Loading tickets...</p>';
+      try {
+        const eventCount = await contract.methods.eventCount().call();
+        console.log("Event count for tickets:", eventCount);
+        ticketsList.innerHTML = '';
+        for (let i = 1; i <= eventCount; i++) {
+          try {
+            const tickets = await contract.methods.getUserTickets(i, account).call();
+            if (tickets.length > 0) {
+              const event = await contract.methods.getEventDetails(i).call();
+              const ticketSection = document.createElement('div');
+              ticketSection.innerHTML = `
+                <h5>Event ID: ${i} - ${event.name}</h5>
+                <ul class="list-group">
+                  ${tickets.map(id => `<li class="list-group-item">Ticket ID: ${id}</li>`).join('')}
+                </ul>
+              `;
+              ticketsList.appendChild(ticketSection);
+            }
+          } catch (error) {
+            console.error(`Error loading tickets for event ${i}:`, error);
+          }
+        }
+        if (ticketsList.innerHTML === '') {
+          ticketsList.innerHTML = '<p>No tickets found</p>';
+        }
+      } catch (error) {
+        console.error("Error loading tickets:", error);
+        ticketsList.innerHTML = '<p>Error loading tickets: ' + error.message + '</p>';
+      }
+    }
+
+    // Sidebar navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const section = link.dataset.section;
+        const isLogout = link.id === 'logoutLink';
+
+        if (isLogout) {
+          console.log("Logout clicked, disconnecting wallet");
+          await disconnectWallet();
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // Skip navigation to createEvent if user is not owner
+        if (section === 'createEvent' && account.toLowerCase() !== contractOwner.toLowerCase()) {
+          console.log("Access to Create Event denied for non-owner");
+          return;
+        }
+
+        console.log("Navigating to section:", section);
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.add('d-none'));
+        document.getElementById(section).classList.remove('d-none');
+        if (section === 'myTickets') {
+          loadTickets(); // Automatically load tickets when navigating to My Tickets
+        }
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
+        if (offcanvas) {
+          offcanvas.hide();
+          console.log("Sidebar closed after navigation");
+        }
+      });
+    });
+
+    // Event listeners
+    document.getElementById('createEventForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('eventName').value;
+      const description = document.getElementById('eventDescription').value;
+      const location = document.getElementById('eventLocation').value;
+      const date = Math.floor(new Date(document.getElementById('eventDate').value).getTime() / 1000);
+      const ticketPrice = web3.utils.toWei(document.getElementById('ticketPrice').value, 'ether');
+      const totalSupply = document.getElementById('totalSupply').value;
+      const resalePriceCap = web3.utils.toWei(document.getElementById('resalePriceCap').value, 'ether');
+      const transferable = document.getElementById('transferable').value === 'true';
+
+      try {
+        await contract.methods.createEvent(name, description, location, date, ticketPrice, totalSupply, resalePriceCap, transferable)
+          .send({ from: account });
+        showAlert("Event created successfully!", "success");
+        loadEvents();
+      } catch (error) {
+        console.error("Create event error:", error);
+        showAlert("Failed to create event: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('cancelEvent').addEventListener('click', async () => {
+      const eventId = document.getElementById('cancelEventId').value;
+      try {
+        await contract.methods.cancelEvent(eventId).send({ from: account });
+        showAlert("Event canceled successfully!", "success");
+        loadEvents();
+      } catch (error) {
+        console.error("Cancel event error:", error);
+        showAlert("Failed to cancel event: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('withdrawFunds').addEventListener('click', async () => {
+      try {
+        await contract.methods.withdraw().send({ from: account });
+        showAlert("Funds withdrawn successfully!", "success");
+      } catch (error) {
+        console.error("Withdraw error:", error);
+        showAlert("Failed to withdraw funds: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('pauseContract').addEventListener('click', async () => {
+      try {
+        await contract.methods.pause().send({ from: account });
+        showAlert("Contract paused successfully!", "success");
+      } catch (error) {
+        console.error("Pause error:", error);
+        showAlert("Failed to pause contract: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('unpauseContract').addEventListener('click', async () => {
+      try {
+        await contract.methods.unpause().send({ from: account });
+        showAlert("Contract unpaused successfully!", "success");
+      } catch (error) {
+        console.error("Unpause error:", error);
+        showAlert("Failed to unpause contract: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('verifyTicketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const eventId = document.getElementById('verifyEventId').value;
+      const attendee = document.getElementById('verifyAttendee').value;
+      const ticketId = document.getElementById('verifyTicketId').value;
+      try {
+        const event = await contract.methods.getEventDetails(eventId).call();
+        const isValid = await contract.methods.verifyTicket(eventId, attendee, ticketId).call({ from: account });
+        let message;
+        if (isValid && event.canceled) {
+          message = "The ticket is valid. However, unfortunately the event is canceled, you can refund this ticket.";
+        } else {
+          message = `Ticket is ${isValid ? 'valid' : 'invalid'}`;
+        }
+        document.getElementById('verifyResult').innerText = message;
+        showAlert(`Verification result: ${message}`, isValid && !event.canceled ? "success" : "warning");
+      } catch (error) {
+        console.error("Verify ticket error:", error);
+        showAlert("Failed to verify ticket: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('transferTicketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const eventId = document.getElementById('transferEventId').value;
+      const ticketId = document.getElementById('transferTicketId').value;
+      const to = document.getElementById('transferTo').value;
+      const resalePrice = web3.utils.toWei(document.getElementById('resalePrice').value, 'ether');
+      try {
+        await contract.methods.transferTicket(eventId, ticketId, to, resalePrice)
+          .send({ from: account });
+        showAlert("Ticket transferred successfully!", "success");
+        loadTickets();
+      } catch (error) {
+        console.error("Transfer ticket error:", error);
+        showAlert("Failed to transfer ticket: " + error.message, "danger");
+      }
+    });
+
+    document.getElementById('refundTicketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const eventId = document.getElementById('refundEventId').value;
+      const ticketId = document.getElementById('refundTicketId').value;
+      try {
+        await contract.methods.refundTicket(eventId, ticketId).send({ from: account });
+        showAlert("Ticket refunded successfully!", "success");
+        loadTickets();
+      } catch (error) {
+        console.error("Refund ticket error:", error);
+        showAlert("Failed to refund ticket: " + error.message, "danger");
+      }
+    });
+
+    // Initialize on page load
+    initWeb3();
+  </script>
+</body>
+
+</html>
