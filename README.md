@@ -84,9 +84,7 @@ This project is licensed under the [MIT License](LICENSE). Feel free to use, mod
 
 ## Contact and Support
 
-- **GitHub**: [yourusername/ticketerium](https://github.com/yourusername/ticketerium)
-- **Issues**: Report bugs or request features on the [Issues page](https://github.com/yourusername/ticketerium/issues).
-- **Email**: [your-email@example.com](mailto:your-email@example.com)
+- **Email**: [kclambd@connect.ust.hk](mailto:kclambd@connect.ust.hk)
 
 ## Screenshots
 
