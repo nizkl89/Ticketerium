@@ -2,6 +2,9 @@
 
 Welcome to Ticketerium, a decentralized application (DApp) built on the Ethereum blockchain using the Sepolia Testnet. This project provides a secure and transparent platform for event ticketing, leveraging MetaMask for wallet integration and smart contracts for ticket management.
 
+Try it out:
+[https://nizkl89.github.io/Ticketerium/](https://nizkl89.github.io/Ticketerium/)
+
 ## Features
 
 - **Secure Login**: Connect via MetaMask wallet for authenticated access.
