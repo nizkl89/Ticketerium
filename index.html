@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ticketerium</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" type="image/ico" href="/img/favicon.ico">
+  <title>TICKETERIUM</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
   <style>
-    /* Additional styles for enhanced login page */
     body,
     html {
       height: 100%;
@@ -250,7 +250,7 @@
   <nav class="navbar">
     <div class="container">
       <a class="navbar-brand" href="#">
-        <i class="fas fa-ticket-alt"></i> Ticketerium
+        <i class="fas fa-ticket-alt"></i> TICKETERIUM
       </a>
       <div class="navbar-right">
         <span class="tagline">Secure, Decentralized Event Ticketing</span>
@@ -264,11 +264,12 @@
       <div class="card login-card">
         <div class="card-body">
           <h1 class="login-title">Event Ticketing DApp</h1>
-          <p class="login-text">Connect your MetaMask wallet to access secure, blockchain-based ticketing</p>
-          <button class="btn btn-primary btn-lg" onclick="connectWallet()">
+          <p class="login-text">Connect your MetaMask wallet to access secure, blockchain-based ticketing with
+            escrow-based trades and trust system.</p>
+          <button id="connectWallet" class="btn btn-primary btn-lg">
             <i class="fab fa-ethereum me-2"></i> Connect Wallet
           </button>
-          <p class="login-error d-none">Please install MetaMask to continue</p>
+          <p id="noMetaMask" class="login-error d-none">Please install MetaMask to continue</p>
         </div>
       </div>
     </div>
@@ -284,7 +285,8 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3@4.7.0/dist/web3.min.js"></script>
   <script>
     async function connectWallet() {
       if (typeof window.ethereum !== 'undefined') {
@@ -293,12 +295,15 @@
           window.location.href = 'dashboard.html';
         } catch (error) {
           console.error('Wallet connection failed:', error);
-          document.querySelector('.login-error').classList.remove('d-none');
+          alert('Failed to connect wallet: ' + error.message);
         }
       } else {
-        document.querySelector('.login-error').classList.remove('d-none');
+        document.getElementById('noMetaMask').classList.remove('d-none');
+        document.getElementById('connectWallet').disabled = true;
       }
     }
+
+    document.getElementById('connectWallet').addEventListener('click', connectWallet);
 
     // Particle animation for right half
     const canvas = document.getElementById('particleCanvas');
