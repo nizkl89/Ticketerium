@@ -559,24 +559,66 @@
       const noMetaMaskElement = document.getElementById('noMetaMask');
       const connectButton = document.getElementById('connectWallet');
 
-      if (typeof window.ethereum !== 'undefined') {
+      // Function to attempt wallet connection
+      async function tryConnect() {
         try {
           await window.ethereum.request({ method: 'eth_requestAccounts' });
           window.location.href = 'dashboard.html';
+          return true;
         } catch (error) {
           console.error('Wallet connection failed:', error);
           noMetaMaskElement.classList.remove('d-none');
+          noMetaMaskElement.textContent = 'Failed to connect wallet. Please try again.';
+          return false;
         }
+      }
+
+      // Check if Ethereum provider is available
+      if (typeof window.ethereum !== 'undefined') {
+        await tryConnect();
       } else if (isMobile) {
-        window.location.href = 'metamask://';
-        setTimeout(() => {
-          noMetaMaskElement.classList.remove('d-none');
-          connectButton.disabled = true;
-          window.location.href = 'https://metamask.io/download/';
-        }, 2000);
+        // Open MetaMask deep link
+        window.location.href = 'metamask://dapp/' + window.location.href;
+
+        // Poll for window.ethereum after returning from MetaMask
+        let attempts = 0;
+        const maxAttempts = 10; // Try for ~10 seconds
+        const interval = setInterval(async () => {
+          if (typeof window.ethereum !== 'undefined') {
+            clearInterval(interval);
+            const connected = await tryConnect();
+            if (!connected) {
+              connectButton.disabled = true;
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            noMetaMaskElement.classList.remove('d-none');
+            noMetaMaskElement.textContent = 'Please install MetaMask or return to connect.';
+            connectButton.disabled = true;
+            // Optional: Guide to MetaMask download after delay
+            setTimeout(() => {
+              window.location.href = 'https://metamask.io/download/';
+            }, 3000);
+          }
+          attempts++;
+        }, 1000);
+
+        // Listen for window focus to re-check provider
+        window.addEventListener('focus', async function focusHandler() {
+          if (typeof window.ethereum !== 'undefined') {
+            clearInterval(interval);
+            await tryConnect();
+            window.removeEventListener('focus', focusHandler);
+          }
+        }, { once: true });
       } else {
         noMetaMaskElement.classList.remove('d-none');
+        noMetaMaskElement.textContent = 'Please install MetaMask to continue.';
         connectButton.disabled = true;
+        // Redirect to MetaMask download after delay
+        setTimeout(() => {
+          window.location.href = 'https://metamask.io/download/';
+        }, 2000);
       }
     }
 
