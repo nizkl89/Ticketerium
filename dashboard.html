@@ -5,26 +5,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Event Ticketing - Dashboard</title>
-  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Google Fonts: Roboto -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Web3.js -->
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.7.3/dist/web3.min.js"></script>
-  <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css">
+  <style>
+    .navbar-brand {
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+    }
+
+    .navbar-brand i {
+      margin-right: 8px;
+      font-size: 1.75rem;
+    }
+  </style>
 </head>
 
 <body>
-  <!-- Toggle Button -->
   <button class="btn toggle-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar"
     aria-controls="sidebar">
     <i class="bi bi-list"></i>
   </button>
 
-  <!-- Sidebar Drawer -->
   <div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="sidebarLabel">Event Ticketing</h5>
@@ -36,26 +43,28 @@
           Events</a>
         <a class="nav-link create-event-link" href="#" data-section="createEvent"><i
             class="bi bi-plus-circle me-2"></i>Create Event</a>
-        <a class="nav-link" href="#" data-section="organizerControls"><i class="bi bi-gear me-2"></i>Organizer
-          Controls</a>
+        <a class="nav-link organizer-controls-link" href="#" data-section="organizerControls"><i
+            class="bi bi-gear me-2"></i>Organizer Controls</a>
         <a class="nav-link" href="#" data-section="verifyTicket"><i class="bi bi-check-circle me-2"></i>Verify
           Ticket</a>
-        <a class="nav-link" href="#" data-section="transferTicket"><i class="bi bi-arrow-left-right me-2"></i>Transfer
-          Ticket</a>
-        <a class="nav-link" href="#" data-section="refundTicket"><i class="bi bi-arrow-counterclockwise me-2"></i>Refund
-          Ticket</a>
+        <a class="nav-link" href="#" data-section="transferTicket"><i class="bi bi-arrow-left-right me-2"></i>Request
+          Ticket Trade</a>
+        <a class="nav-link" href="#" data-section="acceptTransfer"><i class="bi bi-arrow-down-circle me-2"></i>Complete
+          Ticket Trade</a>
+        <a class="nav-link" href="#" data-section="pendingTrades"><i class="bi bi-hourglass-split me-2"></i>Pending
+          Trade Requests</a>
+        <a class="nav-link" href="#" data-section="pendingPayments"><i class="bi bi-clock me-2"></i>Pending Payments</a>
         <a class="nav-link" href="#" data-section="myTickets"><i class="bi bi-ticket me-2"></i>My Tickets</a>
         <a class="nav-link" href="index.html" id="logoutLink"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
       </nav>
     </div>
   </div>
 
-  <!-- Loading Indicator Modal -->
   <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content bg-transparent border-0">
         <div class="modal-body text-center">
-          <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Processing transaction...</span>
           </div>
           <p class="mt-2 text-white">Processing transaction...</p>
@@ -64,12 +73,17 @@
     </div>
   </div>
 
-  <!-- Main Content -->
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+    <!-- Toasts will be dynamically added here -->
+  </div>
+
   <div class="content">
-    <h1 class="mb-4">Ticketerium</h1>
+    <h1 class="mb-4 navbar-brand">
+      <i class="fas fa-ticket-alt me-2"></i> TICKETERIUM
+    </h1>
     <p id="accountStatus" class="mb-3 badge"></p>
 
-    <!-- Events Section -->
     <div id="events" class="section">
       <div class="card">
         <div class="card-header">Browse Events</div>
@@ -77,7 +91,6 @@
       </div>
     </div>
 
-    <!-- Create Event Section -->
     <div id="createEvent" class="section d-none">
       <div class="card">
         <div class="card-header">Create Event</div>
@@ -98,7 +111,7 @@
             </div>
             <div class="mb-3">
               <label for="eventDate" class="form-label">Date and Time</label>
-              <input type="datetime-local" class="form-control" id="eventDate" required>
+              <input type="datetime-local" class="w-100" id="eventDate" required>
             </div>
             <div class="mb-3">
               <label for="ticketPrice" class="form-label">Ticket Price (ETH)</label>
@@ -113,6 +126,10 @@
               <input type="number" step="0.001" class="form-control" id="resalePriceCap" required>
             </div>
             <div class="mb-3">
+              <label for="maxTicketsPerAddress" class="form-label">Max Tickets per Address</label>
+              <input type="number" class="form-control" id="maxTicketsPerAddress" required>
+            </div>
+            <div class="mb-3">
               <label for="transferable" class="form-label">Allow Transfers</label>
               <select class="form-control" id="transferable" required>
                 <option value="true">Yes</option>
@@ -125,18 +142,24 @@
       </div>
     </div>
 
-    <!-- Organizer Controls Section -->
     <div id="organizerControls" class="section d-none">
       <div class="card">
         <div class="card-header">Organizer Controls</div>
         <div class="card-body">
+          <div class="mb-3">
+            <label for="platformIncentive" class="form-label">Platform Incentive (ETH)</label>
+            <input type="number" step="0.001" class="form-control" id="platformIncentive" required>
+            <button class="btn btn-primary mt-2 w-100" id="setIncentive">Set Platform Incentive</button>
+          </div>
           <div class="mb-3">
             <label for="cancelEventId" class="form-label">Cancel Event ID</label>
             <input type="number" class="form-control" id="cancelEventId" required>
             <button class="btn btn-danger mt-2 w-100" id="cancelEvent">Cancel Event</button>
           </div>
           <div class="mb-3">
-            <button class="btn btn-warning w-100" id="releaseFunds">Release Funds</button>
+            <label for="releaseEventId" class="form-label">Release Funds Event ID</label>
+            <input type="number" class="form-control" id="releaseEventId" required>
+            <button class="btn btn-warning mt-2 w-100" id="releaseFunds">Release Funds</button>
           </div>
           <div class="mb-3 d-flex gap-2">
             <button class="btn btn-secondary w-50" id="pauseContract">Pause Contract</button>
@@ -156,7 +179,6 @@
       </div>
     </div>
 
-    <!-- Verify Ticket Section -->
     <div id="verifyTicket" class="section d-none">
       <div class="card">
         <div class="card-header">Verify Ticket</div>
@@ -174,6 +196,10 @@
               <label for="verifyAttendee" class="form-label">Attendee Address</label>
               <input type="text" class="form-control" id="verifyAttendee" required>
             </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="useMyAddress" checked>
+              <label class="form-check-label" for="useMyAddress">Verify my own ticket</label>
+            </div>
             <button type="submit" class="btn btn-info w-100">Verify Ticket</button>
           </form>
           <p id="verifyResult" class="mt-2"></p>
@@ -181,10 +207,9 @@
       </div>
     </div>
 
-    <!-- Transfer Ticket Section -->
     <div id="transferTicket" class="section d-none">
       <div class="card">
-        <div class="card-header">Transfer Ticket</div>
+        <div class="card-header">Request Ticket Trade</div>
         <div class="card-body">
           <form id="transferTicketForm">
             <div class="mb-3">
@@ -196,61 +221,242 @@
               <input type="number" class="form-control" id="transferTicketId" required>
             </div>
             <div class="mb-3">
-              <label for="transferTo" class="form-label">Recipient Address</label>
+              <label for="transferTo" class="form-label">Seller Address</label>
               <input type="text" class="form-control" id="transferTo" required>
             </div>
             <div class="mb-3">
-              <label for="resalePrice" class="form-label">Resale Price (ETH)</label>
+              <label for="resalePrice" class="form-label">Negotiated Price (ETH)</label>
               <input type="number" step="0.001" class="form-control" id="resalePrice" required>
             </div>
-            <button type="submit" class="btn btn-warning w-100">Transfer Ticket</button>
+            <button type="submit" class="btn btn-warning w-100">Request Trade</button>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- Refund Ticket Section -->
-    <div id="refundTicket" class="section d-none">
+    <div id="acceptTransfer" class="section d-none">
       <div class="card">
-        <div class="card-header">Refund Ticket</div>
+        <div class="card-header">Complete Ticket Trade</div>
         <div class="card-body">
-          <form id="refundTicketForm">
+          <form id="acceptTransferForm">
             <div class="mb-3">
-              <label for="refundEventId" class="form-label">Event ID</label>
-              <input type="number" class="form-control" id="refundEventId" required>
+              <label for="acceptEventId" class="form-label">Event ID</label>
+              <input type="number" class="form-control" id="acceptEventId" required>
             </div>
             <div class="mb-3">
-              <label for="refundTicketId" class="form-label">Ticket ID</label>
-              <input type="number" class="form-control" id="refundTicketId" required>
+              <label for="acceptTicketId" class="form-label">Ticket ID</label>
+              <input type="number" class="form-control" id="acceptTicketId" required>
             </div>
-            <button type="submit" class="btn btn-warning w-100">Refund Ticket</button>
+            <button type="submit" class="btn btn-success w-100">Complete Trade</button>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- My Tickets Section -->
+    <div id="pendingTrades" class="section d-none">
+      <div class="card">
+        <div class="card-header">Pending Trade Requests</div>
+        <div class="card-body">
+          <div id="pendingTradesList" class="ticket-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pendingPayments" class="section d-none">
+      <div class="card">
+        <div class="card-header">Pending Payments</div>
+        <div class="card-body">
+          <div id="pendingPaymentsList" class="ticket-list"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="myTickets" class="section d-none">
       <div class="card">
         <div class="card-header">My Tickets</div>
         <div class="card-body">
+          <div id="trustViolations" class="mb-3"></div>
           <div id="ticketsList" class="ticket-list"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap JS and Popper.js -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.7.3/dist/web3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
   <script>
-    // Contract configuration
-    const contractAddress = "0xdC62A4997d21C98F5201f9F473402a65D496e00d"; // Replace with deployed EventTicketingWithEscrow address
+    const contractAddress = "0x006B932f09F85f42C480Aa5872AE9d3F2CF18ea8";
     const contractABI = [
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_paymentWindow",
+            "type": "uint256"
+          }
+        ],
+        "name": "acceptTicketTrade",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "cancelEvent",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "cancelTradePayment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "cancelTradeRequest",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "completeTicketTrade",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_description",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_location",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_date",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketPrice",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_totalSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_resalePriceCap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_maxTicketsPerAddress",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "_transferable",
+            "type": "bool"
+          }
+        ],
+        "name": "createEvent",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
       {
         "inputs": [],
         "stateMutability": "nonpayable",
         "type": "constructor"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
       },
       {
         "anonymous": false,
@@ -320,6 +526,63 @@
         "inputs": [
           {
             "indexed": true,
+            "internalType": "address",
+            "name": "previousOwner",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newOwner",
+            "type": "address"
+          }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+      },
+      {
+        "inputs": [],
+        "name": "pause",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          }
+        ],
+        "name": "Paused",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_quantity",
+            "type": "uint256"
+          }
+        ],
+        "name": "purchaseTickets",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
             "internalType": "uint256",
             "name": "eventId",
             "type": "uint256"
@@ -345,6 +608,98 @@
         ],
         "name": "RefundIssued",
         "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          }
+        ],
+        "name": "refundTicket",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "releaseFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          }
+        ],
+        "name": "removeEvent",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_eventId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_ticketId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "_seller",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_price",
+            "type": "uint256"
+          }
+        ],
+        "name": "requestTicketTrade",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_incentive",
+            "type": "uint256"
+          }
+        ],
+        "name": "setPlatformIncentive",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
       },
       {
         "anonymous": false,
@@ -389,79 +744,230 @@
           {
             "indexed": false,
             "internalType": "address",
-            "name": "from",
+            "name": "seller",
             "type": "address"
           },
           {
             "indexed": false,
             "internalType": "address",
-            "name": "to",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "paymentWindow",
+            "type": "uint256"
+          }
+        ],
+        "name": "TradeAccepted",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          }
+        ],
+        "name": "TradeCompleted",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "incentiveToSeller",
+            "type": "uint256"
+          }
+        ],
+        "name": "TradePaymentTimedOut",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "buyer",
             "type": "address"
           }
         ],
-        "name": "TicketTransferred",
+        "name": "TradeRequestTimedOut",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "eventId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "incentive",
+            "type": "uint256"
+          }
+        ],
+        "name": "TradeRequested",
         "type": "event"
       },
       {
         "inputs": [
           {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
+            "internalType": "address",
+            "name": "newOwner",
+            "type": "address"
           }
         ],
-        "name": "cancelEvent",
+        "name": "transferOwnership",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
       },
       {
+        "anonymous": false,
         "inputs": [
           {
-            "internalType": "string",
-            "name": "_name",
-            "type": "string"
+            "indexed": true,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
           },
           {
-            "internalType": "string",
-            "name": "_description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "_location",
-            "type": "string"
-          },
-          {
+            "indexed": true,
             "internalType": "uint256",
-            "name": "_date",
+            "name": "eventId",
             "type": "uint256"
           },
           {
+            "indexed": false,
             "internalType": "uint256",
-            "name": "_ticketPrice",
+            "name": "violations",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_totalSupply",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_resalePriceCap",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "_transferable",
-            "type": "bool"
           }
         ],
-        "name": "createEvent",
+        "name": "TrustViolation",
+        "type": "event"
+      },
+      {
+        "inputs": [],
+        "name": "unpause",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          }
+        ],
+        "name": "Unpaused",
+        "type": "event"
       },
       {
         "inputs": [],
@@ -546,6 +1052,11 @@
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "maxTicketsPerAddress",
+            "type": "uint256"
+          },
+          {
             "internalType": "bool",
             "name": "transferable",
             "type": "bool"
@@ -559,6 +1070,30 @@
             "internalType": "bool",
             "name": "exists",
             "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_user",
+            "type": "address"
+          }
+        ],
+        "name": "getUserTickets",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "eventIds",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[][]",
+            "name": "ticketIds",
+            "type": "uint256[][]"
           }
         ],
         "stateMutability": "view",
@@ -579,13 +1114,6 @@
       },
       {
         "inputs": [],
-        "name": "pause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [],
         "name": "paused",
         "outputs": [
           {
@@ -598,78 +1126,16 @@
         "type": "function"
       },
       {
-        "inputs": [
+        "inputs": [],
+        "name": "platformIncentive",
+        "outputs": [
           {
             "internalType": "uint256",
-            "name": "_eventId",
+            "name": "",
             "type": "uint256"
           }
         ],
-        "name": "purchaseTicket",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_quantity",
-            "type": "uint256"
-          }
-        ],
-        "name": "purchaseTickets",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_ticketId",
-            "type": "uint256"
-          }
-        ],
-        "name": "refundTicket",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
-          }
-        ],
-        "name": "releaseFunds",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
-          }
-        ],
-        "name": "removeEvent",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
       },
       {
@@ -723,57 +1189,107 @@
       {
         "inputs": [
           {
-            "internalType": "address",
-            "name": "_newOwner",
-            "type": "address"
-          }
-        ],
-        "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_eventId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_ticketId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "_to",
-            "type": "address"
-          }
-        ],
-        "name": "transferTicket",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "unpause",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
             "internalType": "uint256",
             "name": "",
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "tradeRequests",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ticketId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerIncentive",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "sellerIncentive",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "requestTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "paymentWindow",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "accepted",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
             "internalType": "address",
             "name": "",
             "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "trustViolations",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
           },
           {
             "internalType": "uint256",
@@ -825,14 +1341,12 @@
 
     let web3, contract, account, contractOwner;
 
-    // Initialize Web3 and contract
     async function initWeb3() {
       if (window.ethereum) {
         web3 = new Web3(window.ethereum);
         try {
           const chainId = await web3.eth.getChainId();
-          console.log("Chain ID:", chainId);
-          if (chainId !== 11155111) { // Sepolia Testnet
+          if (chainId !== 11155111) {
             showAlert("Please switch to Sepolia Testnet in MetaMask", "warning");
             window.location.href = 'index.html';
             return;
@@ -846,8 +1360,6 @@
           account = accounts[0];
           contract = new web3.eth.Contract(contractABI, contractAddress);
           contractOwner = await contract.methods.owner().call();
-          console.log("Contract owner:", contractOwner);
-
           const isOwner = account.toLowerCase() === contractOwner.toLowerCase();
           const role = isOwner ? 'Organizer' : 'Attendee';
           const badgeClass = isOwner ? 'bg-success' : 'bg-primary';
@@ -856,19 +1368,20 @@
           accountStatus.className = `mb-3 badge ${badgeClass}`;
           accountStatus.innerText = `Connected: ${role} (${shortAccount})`;
           accountStatus.setAttribute('aria-label', `Connected as ${role} with account ${shortAccount}`);
-          console.log("Web3 initialized, account:", account, "role:", role);
 
           if (!isOwner) {
-            document.querySelector('.create-event-link').style.display = 'none';
-            document.getElementById('createEvent').style.display = 'none';
-            document.querySelector('.nav-link[data-section="organizerControls"]').style.display = 'none';
-            document.getElementById('organizerControls').style.display = 'none';
-            console.log("Create Event and Organizer Controls hidden for non-owner");
-          } else {
-            console.log("Create Event and Organizer Controls visible for owner");
+            document.querySelector('.create-event-link').classList.add('hidden');
+            document.querySelector('.organizer-controls-link').classList.add('hidden');
+            document.getElementById('createEvent').classList.add('d-none');
+            document.getElementById('organizerControls').classList.add('d-none');
           }
 
+          initVerifyForm();
           loadEvents();
+          loadTickets();
+          loadPendingTrades();
+          loadPendingPayments();
+          loadTrustViolations();
           initSidebar();
         } catch (error) {
           console.error("Initialization error:", error);
@@ -881,7 +1394,6 @@
       }
     }
 
-    // Disconnect wallet
     async function disconnectWallet() {
       try {
         if (window.ethereum && window.ethereum.isMetaMask) {
@@ -892,7 +1404,6 @@
           web3 = null;
           account = null;
           contract = null;
-          console.log("Logout successful, permissions revoked");
         }
       } catch (error) {
         console.error("Error disconnecting wallet:", error);
@@ -900,9 +1411,7 @@
       }
     }
 
-    // Initialize sidebar
     function initSidebar() {
-      console.log("Initializing sidebar");
       const offcanvasElement = document.getElementById('sidebar');
       const toggleBtn = document.querySelector('.toggle-btn');
       const content = document.querySelector('.content');
@@ -914,60 +1423,115 @@
       const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
 
       toggleBtn.addEventListener('click', () => {
-        console.log("Toggle button clicked, hiding button");
         toggleBtn.style.display = 'none';
       });
 
       offcanvasElement.addEventListener('hidden.bs.offcanvas', () => {
-        console.log("Sidebar hidden, showing toggle button");
         toggleBtn.style.display = 'flex';
         content.classList.remove('sidebar-open');
       });
 
       offcanvasElement.addEventListener('shown.bs.offcanvas', () => {
-        console.log("Sidebar fully shown");
         content.classList.add('sidebar-open');
       });
     }
 
-    // Show alert messages
     function showAlert(message, type) {
-      const alert = document.createElement('div');
-      alert.className = `alert alert-${type} alert-dismissible fade show`;
-      alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      const toastContainer = document.querySelector('.toast-container');
+      const toastId = `toast-${Date.now()}`;
+      const bgClass = {
+        success: 'bg-success',
+        warning: 'bg-warning',
+        danger: 'bg-danger',
+        info: 'bg-info'
+      }[type] || 'bg-primary';
+      const textClass = type === 'warning' ? 'text-dark' : 'text-white';
+
+      const toastHTML = `
+        <div id="${toastId}" class="toast ${bgClass} ${textClass}" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="1500">
+          <div class="toast-body">
+            ${message}
+          </div>
+        </div>
       `;
-      document.querySelector('.content').prepend(alert);
-      setTimeout(() => alert.remove(), 5000);
+      toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+      const toastElement = document.getElementById(toastId);
+      const toast = new bootstrap.Toast(toastElement);
+      toast.show();
+
+      toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+      });
     }
 
-    // Show loading indicator
     function showLoadingIndicator() {
       const modal = new bootstrap.Modal(document.getElementById('loadingModal'), {
         backdrop: 'static',
         keyboard: false
       });
       modal.show();
-      console.log("Loading indicator shown");
     }
 
-    // Hide loading indicator
     function hideLoadingIndicator() {
       const modal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
       if (modal) {
         modal.hide();
-        console.log("Loading indicator hidden");
       }
     }
 
-    // Load all events
+    function handleError(error) {
+      const message = error.reason || error.message;
+      const friendlyMessage = {
+        'E1': 'Event does not exist',
+        'C1': 'Event is canceled',
+        'T1': 'Event has already occurred',
+        'Q1': 'Quantity must be greater than 0',
+        'A1': 'Not enough tickets available',
+        'P1': 'Incorrect payment amount',
+        'M2': 'Exceeds max tickets per address',
+        'V1': 'Too many trust violations (5 max)',
+        'R2': 'Refund transfer failed',
+        'C2': 'Event is not canceled',
+        'O1': 'Not ticket owner',
+        'R3': 'Ticket already refunded',
+        'T2': 'Event has not yet occurred',
+        'F1': 'No funds to release',
+        'F2': 'Fund release failed',
+        'TR1': 'Tickets are not transferable',
+        'O2': 'Seller does not own ticket',
+        'S1': 'Cannot trade with yourself',
+        'R1': 'Price exceeds resale cap',
+        'I2': 'Incorrect incentive amount',
+        'TR2': 'Trade request already active',
+        'TR3': 'No active trade request',
+        'S2': 'Not the seller',
+        'T3': 'Request timed out',
+        'W1': 'Payment window must be 10-30 minutes',
+        'TR4': 'Trade not accepted',
+        'B1': 'Not the buyer',
+        'T4': 'Payment window expired',
+        'P2': 'Payment to seller failed',
+        'I3': 'Incentive transfer failed',
+        'T5': 'Request not timed out',
+        'A2': 'Not authorized',
+        'I4': 'Incentive refund failed',
+        'I5': 'Incentive transfer to seller failed',
+        'T6': 'Payment window not expired',
+        'I1': 'Incentive must be greater than 0',
+        'N1': 'Name cannot be empty',
+        'D1': 'Date must be at least 1 hour in future',
+        'S1': 'Invalid ticket supply',
+        'M1': 'Invalid max tickets per address'
+      }[message] || message;
+      showAlert(`Error: ${friendlyMessage}`, 'danger');
+    }
+
     async function loadEvents() {
       const eventsList = document.getElementById('eventsList');
       eventsList.innerHTML = '<p>Loading events...</p>';
       try {
         const eventCount = await contract.methods.eventCounter().call();
-        console.log("Event count:", eventCount);
         if (eventCount == 0) {
           eventsList.innerHTML = '<p>No events found. Create an event to get started!</p>';
           return;
@@ -977,7 +1541,6 @@
           try {
             const event = await contract.methods.events(i).call();
             if (event.exists) {
-              console.log(`Event ${i}:`, event);
               eventsHTML += `
                 <div class="col-md-4 mb-4">
                   <div class="card event-card h-100">
@@ -995,7 +1558,7 @@
                       </p>
                       <div class="mb-3">
                         <label for="quantity-${i}" class="form-label">Quantity</label>
-                        <input type="number" class="form-control" id="quantity-${i}" min="1" value="1" aria-label="Ticket quantity">
+                        <input type="number" class="form-control" id="quantity-${i}" min="1" value="1" aria-label="Ticket quantity for event ${event.name}">
                       </div>
                       <button class="btn btn-primary w-100 buy-ticket mt-auto" 
                               data-event-id="${i}" 
@@ -1024,7 +1587,6 @@
       }
     }
 
-    // Add listeners for buy ticket buttons
     function addBuyTicketListeners() {
       document.querySelectorAll('.buy-ticket').forEach(button => {
         button.addEventListener('click', async (e) => {
@@ -1052,76 +1614,55 @@
             loadTickets();
           } catch (error) {
             hideLoadingIndicator();
-            console.error("Purchase error:", error);
-            showAlert("Failed to purchase tickets: " + error.message, "danger");
+            handleError(error);
           }
         });
       });
     }
 
-    // Load user's tickets
     async function loadTickets() {
       const ticketsList = document.getElementById('ticketsList');
       ticketsList.innerHTML = '<p>Loading tickets...</p>';
-      console.log("loadTickets called, account:", account);
       try {
-        const eventCount = await contract.methods.eventCounter().call();
-        console.log("Event count for tickets:", eventCount);
-        if (eventCount == 0) {
-          ticketsList.innerHTML = '<p>No events found</p>';
-          console.log("No events exist");
+        const result = await contract.methods.getUserTickets(account).call();
+        const eventIds = result[0] || [];
+        const ticketIds = result[1] || [];
+
+        if (eventIds.length === 0 || ticketIds.length === 0) {
+          ticketsList.innerHTML = '<p>No tickets found</p>';
           return;
         }
 
-        const eventSections = new Map();
-        let hasTickets = false;
-
-        for (let i = 1; i <= eventCount; i++) {
+        ticketsList.innerHTML = '';
+        for (let i = 0; i < eventIds.length; i++) {
+          const eventId = eventIds[i];
+          const eventTickets = ticketIds[i] || [];
           try {
-            const event = await contract.methods.events(i).call();
-            console.log(`Checking event ${i}:`, event.name, "exists:", event.exists, "totalSupply:", event.totalSupply);
-            if (event.exists && event.totalSupply > 0) {
-              for (let j = 1; j <= event.totalSupply; j++) {
-                try {
-                  const owner = await contract.methods.ticketOwners(i, j).call();
-                  console.log(`Event ${i}, Ticket ${j}, Owner: ${owner}`);
-                  if (owner.toLowerCase() === account.toLowerCase()) {
-                    console.log(`Found ticket ${j} for account ${account} in event ${i}`);
-                    if (!hasTickets) {
-                      ticketsList.innerHTML = '';
-                      hasTickets = true;
-                      console.log("Cleared default 'Loading tickets' state");
-                    }
-                    if (!eventSections.has(i)) {
-                      const ticketSection = document.createElement('div');
-                      ticketSection.innerHTML = `
-                        <h5>Event ID: ${i} - ${event.name}</h5>
-                        <ul class="list-group" id="ticket-list-${i}"></ul>
-                      `;
-                      ticketsList.appendChild(ticketSection);
-                      const ul = ticketSection.querySelector(`#ticket-list-${i}`);
-                      eventSections.set(i, ul);
-                      console.log(`Created ticket section for event ${i}`);
-                    }
-                    const ul = eventSections.get(i);
-                    const ticketItem = document.createElement('li');
-                    ticketItem.className = 'list-group-item';
-                    ticketItem.innerText = `Ticket ID: ${j}`;
-                    ul.appendChild(ticketItem);
-                    console.log(`Appended ticket ${j} to event ${i}`);
-                  }
-                } catch (error) {
-                  console.error(`Error checking ticket ${j} for event ${i}:`, error);
-                }
+            const event = await contract.methods.events(eventId).call();
+            if (event.exists) {
+              const ticketSection = document.createElement('div');
+              ticketSection.className = 'mb-3';
+              ticketSection.innerHTML = `
+                <h5>Event ID: ${eventId} - ${event.name}</h5>
+                <p><strong>Date:</strong> ${new Date(event.date * 1000).toLocaleString()}</p>
+                <p><strong>Location:</strong> ${event.location}</p>
+                <ul class="list-group" id="ticket-list-${eventId}"></ul>
+              `;
+              ticketsList.appendChild(ticketSection);
+              const ul = ticketSection.querySelector(`#ticket-list-${eventId}`);
+              for (const ticketId of eventTickets) {
+                const ticketItem = document.createElement('li');
+                ticketItem.className = 'list-group-item';
+                ticketItem.innerText = `Ticket ID: ${ticketId}`;
+                ul.appendChild(ticketItem);
               }
             }
           } catch (error) {
-            console.error(`Error loading event ${i}:`, error);
+            console.error(`Error loading event ${eventId}:`, error);
           }
         }
-        if (!hasTickets) {
-          ticketsList.innerHTML = '<p>No tickets found</p>';
-          console.log("No tickets found for account");
+        if (!ticketsList.hasChildNodes()) {
+          ticketsList.innerHTML = '<p>No valid tickets found</p>';
         }
       } catch (error) {
         console.error("Error loading tickets:", error);
@@ -1129,7 +1670,205 @@
       }
     }
 
-    // Sidebar navigation
+    async function loadPendingTrades() {
+      const tradesList = document.getElementById('pendingTradesList');
+      tradesList.innerHTML = '<p>Loading pending trades...</p>';
+      try {
+        const eventCount = await contract.methods.eventCounter().call();
+        let tradesHTML = '';
+        let hasTrades = false;
+        for (let eventId = 1; eventId <= eventCount; eventId++) {
+          const event = await contract.methods.events(eventId).call();
+          if (event.exists) {
+            for (let ticketId = 1; ticketId <= event.ticketsSold; ticketId++) {
+              const request = await contract.methods.tradeRequests(eventId, ticketId).call();
+              if (request.active && request.seller.toLowerCase() === account.toLowerCase()) {
+                hasTrades = true;
+                const timeLeft = request.accepted ? 0 : (request.requestTimestamp * 1000) + 600000 - Date.now();
+                tradesHTML += `
+                  <div class="mb-3">
+                    <p>
+                      Event ID: ${eventId}, Ticket ID: ${ticketId}<br>
+                      Buyer: ${request.buyer}<br>
+                      Price: ${web3.utils.fromWei(request.price, 'ether')} ETH<br>
+                      Incentive: ${web3.utils.fromWei(request.buyerIncentive, 'ether')} ETH<br>
+                      Status: ${request.accepted ? 'Accepted' : 'Pending Acceptance'}<br>
+                      ${!request.accepted ? `<span class="countdown" data-time="${timeLeft}"></span>` : ''}
+                    </p>
+                    ${!request.accepted ? `
+                      <div class="mb-2">
+                        <label for="paymentWindow-${eventId}-${ticketId}" class="form-label">Payment Window (minutes, 10-30)</label>
+                        <input type="number" class="form-control" id="paymentWindow-${eventId}-${ticketId}" min="10" max="30" value="10">
+                        <button class="btn btn-primary w-100 mt-2 accept-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Accept Trade</button>
+                      </div>
+                      <button class="btn btn-danger w-100 cancel-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}" ${timeLeft > 0 ? 'disabled' : ''}>Cancel Trade</button>
+                    ` : ''}
+                  </div>
+                `;
+              }
+            }
+          }
+        }
+        tradesList.innerHTML = tradesHTML || '<p>No pending trade requests</p>';
+        if (hasTrades) {
+          addTradeListeners();
+        }
+        updateCountdowns();
+      } catch (error) {
+        console.error("Error loading pending trades:", error);
+        tradesList.innerHTML = '<p>Error loading trades: ' + error.message + '</p>';
+      }
+    }
+
+    function addTradeListeners() {
+      document.querySelectorAll('.accept-trade').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const eventId = e.target.dataset.eventId;
+          const ticketId = e.target.dataset.ticketId;
+          const paymentWindow = document.getElementById(`paymentWindow-${eventId}-${ticketId}`).value * 60;
+          try {
+            showLoadingIndicator();
+            const incentive = await contract.methods.platformIncentive().call();
+            await contract.methods.acceptTicketTrade(eventId, ticketId, paymentWindow)
+              .send({ from: account, value: incentive });
+            hideLoadingIndicator();
+            showAlert("Trade accepted successfully!", "success");
+            loadPendingTrades();
+            loadPendingPayments();
+          } catch (error) {
+            hideLoadingIndicator();
+            handleError(error);
+          }
+        });
+      });
+      document.querySelectorAll('.cancel-trade').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const eventId = e.target.dataset.eventId;
+          const ticketId = e.target.dataset.ticketId;
+          try {
+            showLoadingIndicator();
+            await contract.methods.cancelTradeRequest(eventId, ticketId).send({ from: account });
+            hideLoadingIndicator();
+            showAlert("Trade request canceled, buyer refunded!", "success");
+            loadPendingTrades();
+          } catch (error) {
+            hideLoadingIndicator();
+            handleError(error);
+          }
+        });
+      });
+    }
+
+    async function loadPendingPayments() {
+      const paymentsList = document.getElementById('pendingPaymentsList');
+      paymentsList.innerHTML = '<p>Loading pending payments...</p>';
+      try {
+        const eventCount = await contract.methods.eventCounter().call();
+        let paymentsHTML = '';
+        let hasPayments = false;
+        for (let eventId = 1; eventId <= eventCount; eventId++) {
+          const event = await contract.methods.events(eventId).call();
+          if (event.exists) {
+            for (let ticketId = 1; ticketId <= event.ticketsSold; ticketId++) {
+              const request = await contract.methods.tradeRequests(eventId, ticketId).call();
+              if (request.active && request.accepted && request.buyer.toLowerCase() === account.toLowerCase()) {
+                hasPayments = true;
+                const deadline = (request.requestTimestamp * 1000) + 600000 + (request.paymentWindow * 1000);
+                const timeLeft = deadline - Date.now();
+                paymentsHTML += `
+                  <div class="mb-3">
+                    <p>
+                      Event ID: ${eventId}, Ticket ID: ${ticketId}<br>
+                      Seller: ${request.seller}<br>
+                      Price: ${web3.utils.fromWei(request.price, 'ether')} ETH<br>
+                      Incentive: ${web3.utils.fromWei(request.buyerIncentive, 'ether')} ETH<br>
+                      <span class="countdown" data-time="${timeLeft}"></span>
+                    </p>
+                    <button class="btn btn-primary w-100 complete-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Complete Payment</button>
+                  </div>
+                `;
+              }
+            }
+          }
+        }
+        paymentsList.innerHTML = paymentsHTML || '<p>No pending payments</p>';
+        if (hasPayments) {
+          addPaymentListeners();
+        }
+        updateCountdowns();
+      } catch (error) {
+        console.error("Error loading pending payments:", error);
+        paymentsList.innerHTML = '<p>Error loading payments: ' + error.message + '</p>';
+      }
+    }
+
+    function addPaymentListeners() {
+      document.querySelectorAll('.complete-trade').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const eventId = e.target.dataset.eventId;
+          const ticketId = e.target.dataset.ticketId;
+          try {
+            showLoadingIndicator();
+            const request = await contract.methods.tradeRequests(eventId, ticketId).call();
+            await contract.methods.completeTicketTrade(eventId, ticketId)
+              .send({ from: account, value: request.price });
+            hideLoadingIndicator();
+            showAlert("Trade completed successfully!", "success");
+            loadPendingPayments();
+            loadTickets();
+          } catch (error) {
+            hideLoadingIndicator();
+            handleError(error);
+          }
+        });
+      });
+    }
+
+    async function loadTrustViolations() {
+      const violationsDiv = document.getElementById('trustViolations');
+      violationsDiv.innerHTML = '';
+      try {
+        const result = await contract.methods.getUserTickets(account).call();
+        const eventIds = result[0] || [];
+        let hasViolations = false;
+        for (const eventId of eventIds) {
+          const violations = await contract.methods.trustViolations(account, eventId).call();
+          if (violations > 0) {
+            hasViolations = true;
+            const alertType = violations >= 5 ? 'danger' : violations >= 3 ? 'warning' : 'info';
+            violationsDiv.innerHTML += `
+              <div class="alert alert-${alertType}">
+                Event ID ${eventId}: ${violations}/5 trust violations. 
+                ${violations >= 5 ? 'You cannot purchase tickets for this event.' : 'Avoid further violations.'}
+              </div>
+            `;
+          }
+        }
+        if (!hasViolations) {
+          violationsDiv.innerHTML = '<p>No trust violations.</p>';
+        }
+      } catch (error) {
+        console.error("Error loading trust violations:", error);
+        violationsDiv.innerHTML = '<p>Error loading trust violations: ' + error.message + '</p>';
+      }
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll('.countdown').forEach(span => {
+        const timeLeft = parseInt(span.dataset.time);
+        if (timeLeft <= 0) {
+          span.innerText = 'Expired';
+          const cancelButton = span.closest('.mb-3').querySelector('.cancel-trade');
+          if (cancelButton) cancelButton.disabled = false;
+        } else {
+          const minutes = Math.floor(timeLeft / 60000);
+          const seconds = Math.floor((timeLeft % 60000) / 1000);
+          span.innerText = `Time left: ${minutes}m ${seconds}s`;
+        }
+      });
+      setTimeout(updateCountdowns, 1000);
+    }
+
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -1137,34 +1876,34 @@
         const isLogout = link.id === 'logoutLink';
 
         if (isLogout) {
-          console.log("Logout clicked, disconnecting wallet");
           await disconnectWallet();
           window.location.href = 'index.html';
           return;
         }
 
         if ((section === 'createEvent' || section === 'organizerControls') && account.toLowerCase() !== contractOwner.toLowerCase()) {
-          console.log("Access to restricted section denied for non-owner");
           return;
         }
 
-        console.log("Navigating to section:", section);
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         document.querySelectorAll('.section').forEach(s => s.classList.add('d-none'));
         document.getElementById(section).classList.remove('d-none');
         if (section === 'myTickets') {
           loadTickets();
+          loadTrustViolations();
+        } else if (section === 'pendingTrades') {
+          loadPendingTrades();
+        } else if (section === 'pendingPayments') {
+          loadPendingPayments();
         }
         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
         if (offcanvas) {
           offcanvas.hide();
-          console.log("Sidebar closed after navigation");
         }
       });
     });
 
-    // Event listeners
     document.getElementById('createEventForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('eventName').value;
@@ -1172,8 +1911,9 @@
       const location = document.getElementById('eventLocation').value;
       const date = Math.floor(new Date(document.getElementById('eventDate').value).getTime() / 1000);
       const ticketPrice = web3.utils.toWei(document.getElementById('ticketPrice').value, 'ether');
-      const totalSupply = document.getElementById('totalSupply').value;
+      const totalSupply = parseInt(document.getElementById('totalSupply').value);
       const resalePriceCap = web3.utils.toWei(document.getElementById('resalePriceCap').value, 'ether');
+      const maxTicketsPerAddress = parseInt(document.getElementById('maxTicketsPerAddress').value);
       const transferable = document.getElementById('transferable').value === 'true';
 
       if (name.length === 0) {
@@ -1193,18 +1933,38 @@
         showAlert("Resale price cap must be at least ticket price", "warning");
         return;
       }
+      if (maxTicketsPerAddress < 1 || maxTicketsPerAddress > totalSupply) {
+        showAlert("Max tickets per address must be between 1 and total supply", "warning");
+        return;
+      }
 
       try {
         showLoadingIndicator();
-        await contract.methods.createEvent(name, description, location, date, ticketPrice, totalSupply, resalePriceCap, transferable)
+        await contract.methods.createEvent(name, description, location, date, ticketPrice, totalSupply, resalePriceCap, maxTicketsPerAddress, transferable)
           .send({ from: account });
         hideLoadingIndicator();
         showAlert("Event created successfully!", "success");
         loadEvents();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Create event error:", error);
-        showAlert("Failed to create event: " + error.message, "danger");
+        handleError(error);
+      }
+    });
+
+    document.getElementById('setIncentive').addEventListener('click', async () => {
+      const incentive = web3.utils.toWei(document.getElementById('platformIncentive').value, 'ether');
+      if (!incentive || incentive <= 0) {
+        showAlert("Please enter a valid incentive amount", "warning");
+        return;
+      }
+      try {
+        showLoadingIndicator();
+        await contract.methods.setPlatformIncentive(incentive).send({ from: account });
+        hideLoadingIndicator();
+        showAlert("Platform incentive set successfully!", "success");
+      } catch (error) {
+        hideLoadingIndicator();
+        handleError(error);
       }
     });
 
@@ -1218,17 +1978,17 @@
         showLoadingIndicator();
         await contract.methods.cancelEvent(eventId).send({ from: account });
         hideLoadingIndicator();
-        showAlert("Event canceled successfully!", "success");
+        showAlert("Event canceled and refunds issued!", "success");
         loadEvents();
+        loadTickets();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Cancel event error:", error);
-        showAlert("Failed to cancel event: " + error.message, "danger");
+        handleError(error);
       }
     });
 
     document.getElementById('releaseFunds').addEventListener('click', async () => {
-      const eventId = prompt("Enter Event ID to release funds:");
+      const eventId = document.getElementById('releaseEventId').value;
       if (!eventId) {
         showAlert("Please enter event ID", "warning");
         return;
@@ -1240,8 +2000,7 @@
         showAlert("Funds released successfully!", "success");
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Release funds error:", error);
-        showAlert("Failed to release funds: " + error.message, "danger");
+        handleError(error);
       }
     });
 
@@ -1253,8 +2012,7 @@
         showAlert("Contract paused successfully!", "success");
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Pause error:", error);
-        showAlert("Failed to pause contract: " + error.message, "danger");
+        handleError(error);
       }
     });
 
@@ -1266,8 +2024,7 @@
         showAlert("Contract unpaused successfully!", "success");
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Unpause error:", error);
-        showAlert("Failed to unpause contract: " + error.message, "danger");
+        handleError(error);
       }
     });
 
@@ -1290,8 +2047,7 @@
         initWeb3();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Transfer ownership error:", error);
-        showAlert("Failed to transfer ownership: " + error.message, "danger");
+        handleError(error);
       }
     });
 
@@ -1309,16 +2065,33 @@
         loadEvents();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Remove event error:", error);
-        showAlert("Failed to remove event: " + error.message, "danger");
+        handleError(error);
       }
     });
+
+    function initVerifyForm() {
+      const useMyAddressCheckbox = document.getElementById('useMyAddress');
+      const attendeeInput = document.getElementById('verifyAttendee');
+      attendeeInput.value = account;
+      attendeeInput.readOnly = true;
+
+      useMyAddressCheckbox.addEventListener('change', () => {
+        if (useMyAddressCheckbox.checked) {
+          attendeeInput.value = account;
+          attendeeInput.readOnly = true;
+        } else {
+          attendeeInput.value = '';
+          attendeeInput.readOnly = false;
+        }
+      });
+    }
 
     document.getElementById('verifyTicketForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const eventId = document.getElementById('verifyEventId').value;
       const ticketId = document.getElementById('verifyTicketId').value;
-      const attendee = document.getElementById('verifyAttendee').value;
+      const useMyAddress = document.getElementById('useMyAddress').checked;
+      const attendee = useMyAddress ? account : document.getElementById('verifyAttendee').value;
       if (!eventId || !ticketId || !attendee) {
         showAlert("Please fill all fields", "warning");
         return;
@@ -1333,15 +2106,14 @@
         const isValid = await contract.methods.verifyTicket(eventId, ticketId, attendee).call();
         let message;
         if (isValid && event.canceled) {
-          message = "The ticket is valid. However, unfortunately the event is canceled, you can refund this ticket.";
+          message = "The ticket is valid but the event is canceled. Refunds have been issued.";
         } else {
           message = `Ticket is ${isValid ? 'valid' : 'invalid'}`;
         }
         document.getElementById('verifyResult').innerText = message;
         showAlert(`Verification result: ${message}`, isValid && !event.canceled ? "success" : "warning");
       } catch (error) {
-        console.error("Verify ticket error:", error);
-        showAlert("Failed to verify ticket: " + error.message, "danger");
+        handleError(error);
       }
     });
 
@@ -1349,59 +2121,61 @@
       e.preventDefault();
       const eventId = document.getElementById('transferEventId').value;
       const ticketId = document.getElementById('transferTicketId').value;
-      const to = document.getElementById('transferTo').value;
-      const resalePrice = document.getElementById('resalePrice').value;
-      if (!eventId || !ticketId || !to || !resalePrice) {
+      const seller = document.getElementById('transferTo').value;
+      const price = web3.utils.toWei(document.getElementById('resalePrice').value, 'ether');
+      if (!eventId || !ticketId || !seller || !price) {
         showAlert("Please fill all fields", "warning");
         return;
       }
-      if (!web3.utils.isAddress(to)) {
-        showAlert("Invalid recipient address", "warning");
+      if (!web3.utils.isAddress(seller)) {
+        showAlert("Invalid seller address", "warning");
         return;
       }
       try {
         const event = await contract.methods.events(eventId).call();
         if (!event.exists) throw new Error('Event does not exist');
+        if (event.canceled) throw new Error('Event is canceled');
         if (!event.transferable) throw new Error('Tickets are not transferable');
-        if (parseFloat(resalePrice) > parseFloat(web3.utils.fromWei(event.resalePriceCap, 'ether'))) {
-          throw new Error('Resale price exceeds cap');
+        if (parseInt(price) > parseInt(event.resalePriceCap)) {
+          throw new Error('Price exceeds resale cap');
         }
         showLoadingIndicator();
-        await contract.methods.transferTicket(eventId, ticketId, to)
-          .send({ from: account });
+        const incentive = await contract.methods.platformIncentive().call();
+        await contract.methods.requestTicketTrade(eventId, ticketId, seller, price)
+          .send({ from: account, value: incentive });
         hideLoadingIndicator();
-        showAlert("Ticket transferred successfully! Note: Resale price is for reference only and not processed by the contract.", "success");
-        loadTickets();
+        showAlert("Trade request created! Notify the seller to accept.", "success");
+        loadPendingPayments();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Transfer ticket error:", error);
-        showAlert("Failed to transfer ticket: " + error.message, "danger");
+        handleError(error);
       }
     });
 
-    document.getElementById('refundTicketForm').addEventListener('submit', async (e) => {
+    document.getElementById('acceptTransferForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const eventId = document.getElementById('refundEventId').value;
-      const ticketId = document.getElementById('refundTicketId').value;
+      const eventId = document.getElementById('acceptEventId').value;
+      const ticketId = document.getElementById('acceptTicketId').value;
       if (!eventId || !ticketId) {
         showAlert("Please fill all fields", "warning");
         return;
       }
       try {
         showLoadingIndicator();
-        await contract.methods.refundTicket(eventId, ticketId).send({ from: account });
+        const request = await contract.methods.tradeRequests(eventId, ticketId).call();
+        await contract.methods.completeTicketTrade(eventId, ticketId)
+          .send({ from: account, value: request.price });
         hideLoadingIndicator();
-        showAlert("Ticket refunded successfully!", "success");
+        showAlert("Trade completed successfully!", "success");
+        loadPendingPayments();
         loadTickets();
       } catch (error) {
         hideLoadingIndicator();
-        console.error("Refund ticket error:", error);
-        showAlert("Failed to refund ticket: " + error.message, "danger");
+        handleError(error);
       }
     });
 
-    // Initialize on page load
-    initWeb3();
+    window.addEventListener('load', initWeb3);
   </script>
 </body>
 
