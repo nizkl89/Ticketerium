@@ -149,7 +149,8 @@
         <div class="card-body">
           <div class="mb-3">
             <label for="platformIncentive" class="form-label">Platform Incentive (ETH)</label>
-            <input type="number" step="0.001" class="form-control" id="platformIncentive" required>
+            <input type="number" step="0.001" class="form-control" id="platformIncentive" required
+              placeholder="Loading current incentive...">
             <button class="btn btn-primary mt-2 w-100" id="setIncentive">Set Platform Incentive</button>
           </div>
           <div class="mb-3">
@@ -195,7 +196,7 @@
             </div>
             <div class="mb-3">
               <label for="verifyAttendee" class="form-label">Attendee Address</label>
-              <input type="text" class="form-control" id="verifyAttendee" required>
+              <input type="text" class="form-control" id="verifyAttendee" required readonly>
             </div>
             <div class="mb-3 form-check">
               <input type="checkbox" class="form-check-input" id="useMyAddress" checked>
@@ -287,7 +288,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
   <script>
-    const contractAddress = "0x006B932f09F85f42C480Aa5872AE9d3F2CF18ea8";
+    const contractAddress = "0xb5b13eeb82b282c274c252ec1d43b7e065516e68";
     const contractABI = [
       {
         "inputs": [
@@ -833,6 +834,12 @@
             "internalType": "uint256",
             "name": "incentiveToSeller",
             "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "incentiveToPlatform",
+            "type": "uint256"
           }
         ],
         "name": "TradePaymentTimedOut",
@@ -864,6 +871,12 @@
             "internalType": "address",
             "name": "buyer",
             "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "buyerIncentive",
+            "type": "uint256"
           }
         ],
         "name": "TradeRequestTimedOut",
@@ -1375,6 +1388,8 @@
             document.querySelector('.organizer-controls-link').classList.add('hidden');
             document.getElementById('createEvent').classList.add('d-none');
             document.getElementById('organizerControls').classList.add('d-none');
+          } else {
+            loadPlatformIncentive();
           }
 
           initVerifyForm();
@@ -1384,6 +1399,7 @@
           loadPendingPayments();
           loadTrustViolations();
           initSidebar();
+          setupEventListeners();
         } catch (error) {
           console.error("Initialization error:", error);
           showAlert("Failed to initialize DApp: " + error.message, "danger");
@@ -1449,7 +1465,7 @@
       const textClass = type === 'warning' ? 'text-dark' : 'text-white';
 
       const toastHTML = `
-        <div id="${toastId}" class="toast ${bgClass} ${textClass}" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="1500">
+        <div id="${toastId}" class="toast ${bgClass} ${textClass}" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
           <div class="toast-body">
             ${message}
           </div>
@@ -1526,6 +1542,61 @@
         'M1': 'Invalid max tickets per address'
       }[message] || message;
       showAlert(`Error: ${friendlyMessage}`, 'danger');
+    }
+
+    async function loadPlatformIncentive() {
+      try {
+        const incentive = await contract.methods.platformIncentive().call();
+        document.getElementById('platformIncentive').value = web3.utils.fromWei(incentive, 'ether');
+      } catch (error) {
+        console.error("Error loading platform incentive:", error);
+        showAlert("Failed to load platform incentive", "warning");
+      }
+    }
+
+    function setupEventListeners() {
+      contract.events.TradeRequestTimedOut()
+        .on('data', (event) => {
+          const { eventId, ticketId, seller, buyer, buyerIncentive } = event.returnValues;
+          showAlert(
+            `Trade request for Event ID ${eventId}, Ticket ID ${ticketId} timed out. ` +
+            `Incentive refunded to buyer ${buyer.slice(0, 6)}...${buyer.slice(-4)}: ` +
+            `${web3.utils.fromWei(buyerIncentive, 'ether')} ETH`,
+            "info"
+          );
+          loadPendingTrades();
+          loadPendingPayments();
+        })
+        .on('error', (error) => console.error("TradeRequestTimedOut listener error:", error));
+
+      contract.events.TradePaymentTimedOut()
+        .on('data', (event) => {
+          const { eventId, ticketId, seller, buyer, incentiveToSeller, incentiveToPlatform } = event.returnValues;
+          showAlert(
+            `Trade payment for Event ID ${eventId}, Ticket ID ${ticketId} timed out. ` +
+            `Seller ${seller.slice(0, 6)}...${seller.slice(-4)} received: ` +
+            `${web3.utils.fromWei(incentiveToSeller, 'ether')} ETH, Platform received: ` +
+            `${web3.utils.fromWei(incentiveToPlatform, 'ether')} ETH`,
+            "info"
+          );
+          loadPendingTrades();
+          loadPendingPayments();
+          loadTickets();
+        })
+        .on('error', (error) => console.error("TradePaymentTimedOut listener error:", error));
+
+      contract.events.TrustViolation()
+        .on('data', (event) => {
+          const { buyer, eventId, violations } = event.returnValues;
+          if (buyer.toLowerCase() === account.toLowerCase()) {
+            showAlert(
+              `Trust violation recorded for Event ID ${eventId}. Total violations: ${violations}`,
+              violations >= 5 ? "danger" : "warning"
+            );
+            loadTrustViolations();
+          }
+        })
+        .on('error', (error) => console.error("TrustViolation listener error:", error));
     }
 
     async function loadEvents() {
@@ -1676,6 +1747,7 @@
       tradesList.innerHTML = '<p>Loading pending trades...</p>';
       try {
         const eventCount = await contract.methods.eventCounter().call();
+        const blockTimestamp = Math.floor(Date.now() / 1000); // Approximate block timestamp
         let tradesHTML = '';
         let hasTrades = false;
         for (let eventId = 1; eventId <= eventCount; eventId++) {
@@ -1683,9 +1755,11 @@
           if (event.exists) {
             for (let ticketId = 1; ticketId <= event.ticketsSold; ticketId++) {
               const request = await contract.methods.tradeRequests(eventId, ticketId).call();
-              if (request.active && request.seller.toLowerCase() === account.toLowerCase()) {
+              if (request.active && request.seller.toLowerCase() === account.toLowerCase() && !request.accepted) {
                 hasTrades = true;
-                const timeLeft = request.accepted ? 0 : (request.requestTimestamp * 1000) + 600000 - Date.now();
+                const deadline = parseInt(request.requestTimestamp) + 600;
+                const timeLeft = (deadline * 1000) - Date.now();
+                const isExpired = blockTimestamp >= deadline;
                 tradesHTML += `
                   <div class="mb-3">
                     <p>
@@ -1693,16 +1767,16 @@
                       Buyer: ${request.buyer}<br>
                       Price: ${web3.utils.fromWei(request.price, 'ether')} ETH<br>
                       Incentive: ${web3.utils.fromWei(request.buyerIncentive, 'ether')} ETH<br>
-                      Status: ${request.accepted ? 'Accepted' : 'Pending Acceptance'}<br>
-                      ${!request.accepted ? `<span class="countdown" data-time="${timeLeft}"></span>` : ''}
+                      Status: ${isExpired ? 'Expired' : 'Pending Acceptance'}<br>
+                      ${!isExpired ? `<span class="countdown" data-deadline="${deadline * 1000}"></span>` : ''}
                     </p>
-                    ${!request.accepted ? `
+                    ${!isExpired ? `
                       <div class="mb-2">
                         <label for="paymentWindow-${eventId}-${ticketId}" class="form-label">Payment Window (minutes, 10-30)</label>
                         <input type="number" class="form-control" id="paymentWindow-${eventId}-${ticketId}" min="10" max="30" value="10">
                         <button class="btn btn-primary w-100 mt-2 accept-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Accept Trade</button>
                       </div>
-                      <button class="btn btn-danger w-100 cancel-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}" ${timeLeft > 0 ? 'disabled' : ''}>Cancel Trade</button>
+                      <button class="btn btn-danger w-100 cancel-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Cancel Trade</button>
                     ` : ''}
                   </div>
                 `;
@@ -1726,7 +1800,12 @@
         button.addEventListener('click', async (e) => {
           const eventId = e.target.dataset.eventId;
           const ticketId = e.target.dataset.ticketId;
-          const paymentWindow = document.getElementById(`paymentWindow-${eventId}-${ticketId}`).value * 60;
+          const paymentWindowInput = document.getElementById(`paymentWindow-${eventId}-${ticketId}`);
+          const paymentWindow = parseInt(paymentWindowInput.value) * 60;
+          if (paymentWindow < 600 || paymentWindow > 1800) {
+            showAlert("Payment window must be between 10 and 30 minutes", "warning");
+            return;
+          }
           try {
             showLoadingIndicator();
             const incentive = await contract.methods.platformIncentive().call();
@@ -1765,6 +1844,7 @@
       paymentsList.innerHTML = '<p>Loading pending payments...</p>';
       try {
         const eventCount = await contract.methods.eventCounter().call();
+        const blockTimestamp = Math.floor(Date.now() / 1000); // Approximate block timestamp
         let paymentsHTML = '';
         let hasPayments = false;
         for (let eventId = 1; eventId <= eventCount; eventId++) {
@@ -1774,8 +1854,9 @@
               const request = await contract.methods.tradeRequests(eventId, ticketId).call();
               if (request.active && request.accepted && request.buyer.toLowerCase() === account.toLowerCase()) {
                 hasPayments = true;
-                const deadline = (request.requestTimestamp * 1000) + 600000 + (request.paymentWindow * 1000);
-                const timeLeft = deadline - Date.now();
+                const deadline = parseInt(request.requestTimestamp) + 600 + parseInt(request.paymentWindow);
+                const timeLeft = (deadline * 1000) - Date.now();
+                const isExpired = blockTimestamp >= deadline;
                 paymentsHTML += `
                   <div class="mb-3">
                     <p>
@@ -1783,9 +1864,13 @@
                       Seller: ${request.seller}<br>
                       Price: ${web3.utils.fromWei(request.price, 'ether')} ETH<br>
                       Incentive: ${web3.utils.fromWei(request.buyerIncentive, 'ether')} ETH<br>
-                      <span class="countdown" data-time="${timeLeft}"></span>
+                      Status: ${isExpired ? 'Expired' : 'Awaiting Payment'}<br>
+                      ${!isExpired ? `<span class="countdown" data-deadline="${deadline * 1000}"></span>` : ''}
                     </p>
-                    <button class="btn btn-primary w-100 complete-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Complete Payment</button>
+                    ${!isExpired ? `
+                      <button class="btn btn-primary w-100 complete-trade" data-event-id="${eventId}" data-ticket-id="${ticketId}">Complete Payment</button>
+                      <button class="btn btn-danger w-100 mt-2 cancel-payment" data-event-id="${eventId}" data-ticket-id="${ticketId}">Cancel Payment</button>
+                    ` : ''}
                   </div>
                 `;
               }
@@ -1815,6 +1900,23 @@
               .send({ from: account, value: request.price });
             hideLoadingIndicator();
             showAlert("Trade completed successfully!", "success");
+            loadPendingPayments();
+            loadTickets();
+          } catch (error) {
+            hideLoadingIndicator();
+            handleError(error);
+          }
+        });
+      });
+      document.querySelectorAll('.cancel-payment').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const eventId = e.target.dataset.eventId;
+          const ticketId = e.target.dataset.ticketId;
+          try {
+            showLoadingIndicator();
+            await contract.methods.cancelTradePayment(eventId, ticketId).send({ from: account });
+            hideLoadingIndicator();
+            showAlert("Trade payment canceled, incentives distributed!", "success");
             loadPendingPayments();
             loadTickets();
           } catch (error) {
@@ -1856,11 +1958,14 @@
 
     function updateCountdowns() {
       document.querySelectorAll('.countdown').forEach(span => {
-        const timeLeft = parseInt(span.dataset.time);
+        const deadline = parseInt(span.dataset.deadline);
+        const timeLeft = deadline - Date.now();
         if (timeLeft <= 0) {
           span.innerText = 'Expired';
-          const cancelButton = span.closest('.mb-3').querySelector('.cancel-trade');
-          if (cancelButton) cancelButton.disabled = false;
+          const parent = span.closest('.mb-3');
+          if (parent) {
+            parent.querySelectorAll('button').forEach(btn => btn.disabled = true);
+          }
         } else {
           const minutes = Math.floor(timeLeft / 60000);
           const seconds = Math.floor((timeLeft % 60000) / 1000);
@@ -1897,6 +2002,8 @@
           loadPendingTrades();
         } else if (section === 'pendingPayments') {
           loadPendingPayments();
+        } else if (section === 'organizerControls') {
+          loadPlatformIncentive();
         }
         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
         if (offcanvas) {
@@ -1930,22 +2037,27 @@
         showAlert("Total supply must be between 1 and 10,000", "warning");
         return;
       }
-      if (parseInt(resalePriceCap) < parseInt(ticketPrice)) {
-        showAlert("Resale price cap must be at least ticket price", "warning");
-        return;
-      }
       if (maxTicketsPerAddress < 1 || maxTicketsPerAddress > totalSupply) {
         showAlert("Max tickets per address must be between 1 and total supply", "warning");
         return;
       }
-
       try {
         showLoadingIndicator();
-        await contract.methods.createEvent(name, description, location, date, ticketPrice, totalSupply, resalePriceCap, maxTicketsPerAddress, transferable)
-          .send({ from: account });
+        await contract.methods.createEvent(
+          name,
+          description,
+          location,
+          date,
+          ticketPrice,
+          totalSupply,
+          resalePriceCap,
+          maxTicketsPerAddress,
+          transferable
+        ).send({ from: account });
         hideLoadingIndicator();
         showAlert("Event created successfully!", "success");
         loadEvents();
+        document.getElementById('createEventForm').reset();
       } catch (error) {
         hideLoadingIndicator();
         handleError(error);
@@ -1953,16 +2065,18 @@
     });
 
     document.getElementById('setIncentive').addEventListener('click', async () => {
-      const incentive = web3.utils.toWei(document.getElementById('platformIncentive').value, 'ether');
-      if (!incentive || incentive <= 0) {
-        showAlert("Please enter a valid incentive amount", "warning");
+      const incentive = document.getElementById('platformIncentive').value;
+      if (incentive <= 0) {
+        showAlert("Incentive must be greater than 0", "warning");
         return;
       }
       try {
         showLoadingIndicator();
-        await contract.methods.setPlatformIncentive(incentive).send({ from: account });
+        await contract.methods.setPlatformIncentive(web3.utils.toWei(incentive, 'ether'))
+          .send({ from: account });
         hideLoadingIndicator();
         showAlert("Platform incentive set successfully!", "success");
+        loadPlatformIncentive();
       } catch (error) {
         hideLoadingIndicator();
         handleError(error);
@@ -1971,17 +2085,12 @@
 
     document.getElementById('cancelEvent').addEventListener('click', async () => {
       const eventId = document.getElementById('cancelEventId').value;
-      if (!eventId) {
-        showAlert("Please enter event ID", "warning");
-        return;
-      }
       try {
         showLoadingIndicator();
         await contract.methods.cancelEvent(eventId).send({ from: account });
         hideLoadingIndicator();
-        showAlert("Event canceled and refunds issued!", "success");
+        showAlert("Event canceled successfully!", "success");
         loadEvents();
-        loadTickets();
       } catch (error) {
         hideLoadingIndicator();
         handleError(error);
@@ -1990,10 +2099,6 @@
 
     document.getElementById('releaseFunds').addEventListener('click', async () => {
       const eventId = document.getElementById('releaseEventId').value;
-      if (!eventId) {
-        showAlert("Please enter event ID", "warning");
-        return;
-      }
       try {
         showLoadingIndicator();
         await contract.methods.releaseFunds(eventId).send({ from: account });
@@ -2031,12 +2136,8 @@
 
     document.getElementById('transferOwnership').addEventListener('click', async () => {
       const newOwner = document.getElementById('newOwner').value;
-      if (!newOwner) {
-        showAlert("Please enter new owner address", "warning");
-        return;
-      }
       if (!web3.utils.isAddress(newOwner)) {
-        showAlert("Invalid address", "warning");
+        showAlert("Invalid Ethereum address", "warning");
         return;
       }
       try {
@@ -2054,10 +2155,6 @@
 
     document.getElementById('removeEvent').addEventListener('click', async () => {
       const eventId = document.getElementById('removeEventId').value;
-      if (!eventId) {
-        showAlert("Please enter event ID", "warning");
-        return;
-      }
       try {
         showLoadingIndicator();
         await contract.methods.removeEvent(eventId).send({ from: account });
@@ -2071,52 +2168,33 @@
     });
 
     function initVerifyForm() {
-      const useMyAddressCheckbox = document.getElementById('useMyAddress');
+      const form = document.getElementById('verifyTicketForm');
+      const useMyAddress = document.getElementById('useMyAddress');
       const attendeeInput = document.getElementById('verifyAttendee');
       attendeeInput.value = account;
-      attendeeInput.readOnly = true;
-
-      useMyAddressCheckbox.addEventListener('change', () => {
-        if (useMyAddressCheckbox.checked) {
-          attendeeInput.value = account;
-          attendeeInput.readOnly = true;
-        } else {
-          attendeeInput.value = '';
-          attendeeInput.readOnly = false;
+      useMyAddress.addEventListener('change', () => {
+        attendeeInput.readOnly = useMyAddress.checked;
+        attendeeInput.value = useMyAddress.checked ? account : '';
+      });
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const eventId = document.getElementById('verifyEventId').value;
+        const ticketId = document.getElementById('verifyTicketId').value;
+        const attendee = attendeeInput.value;
+        if (!web3.utils.isAddress(attendee)) {
+          showAlert("Invalid attendee address", "warning");
+          return;
+        }
+        try {
+          const isValid = await contract.methods.verifyTicket(eventId, ticketId, attendee).call();
+          const result = document.getElementById('verifyResult');
+          result.className = 'mt-2 text-' + (isValid ? 'success' : 'danger');
+          result.innerText = isValid ? 'Ticket is valid!' : 'Ticket is invalid.';
+        } catch (error) {
+          handleError(error);
         }
       });
     }
-
-    document.getElementById('verifyTicketForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const eventId = document.getElementById('verifyEventId').value;
-      const ticketId = document.getElementById('verifyTicketId').value;
-      const useMyAddress = document.getElementById('useMyAddress').checked;
-      const attendee = useMyAddress ? account : document.getElementById('verifyAttendee').value;
-      if (!eventId || !ticketId || !attendee) {
-        showAlert("Please fill all fields", "warning");
-        return;
-      }
-      if (!web3.utils.isAddress(attendee)) {
-        showAlert("Invalid attendee address", "warning");
-        return;
-      }
-      try {
-        const event = await contract.methods.events(eventId).call();
-        if (!event.exists) throw new Error("Event does not exist");
-        const isValid = await contract.methods.verifyTicket(eventId, ticketId, attendee).call();
-        let message;
-        if (isValid && event.canceled) {
-          message = "The ticket is valid but the event is canceled. Refunds have been issued.";
-        } else {
-          message = `Ticket is ${isValid ? 'valid' : 'invalid'}`;
-        }
-        document.getElementById('verifyResult').innerText = message;
-        showAlert(`Verification result: ${message}`, isValid && !event.canceled ? "success" : "warning");
-      } catch (error) {
-        handleError(error);
-      }
-    });
 
     document.getElementById('transferTicketForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2124,29 +2202,18 @@
       const ticketId = document.getElementById('transferTicketId').value;
       const seller = document.getElementById('transferTo').value;
       const price = web3.utils.toWei(document.getElementById('resalePrice').value, 'ether');
-      if (!eventId || !ticketId || !seller || !price) {
-        showAlert("Please fill all fields", "warning");
-        return;
-      }
       if (!web3.utils.isAddress(seller)) {
         showAlert("Invalid seller address", "warning");
         return;
       }
       try {
-        const event = await contract.methods.events(eventId).call();
-        if (!event.exists) throw new Error('Event does not exist');
-        if (event.canceled) throw new Error('Event is canceled');
-        if (!event.transferable) throw new Error('Tickets are not transferable');
-        if (parseInt(price) > parseInt(event.resalePriceCap)) {
-          throw new Error('Price exceeds resale cap');
-        }
         showLoadingIndicator();
         const incentive = await contract.methods.platformIncentive().call();
         await contract.methods.requestTicketTrade(eventId, ticketId, seller, price)
           .send({ from: account, value: incentive });
         hideLoadingIndicator();
-        showAlert("Trade request created! Notify the seller to accept.", "success");
-        loadPendingPayments();
+        showAlert("Trade request sent successfully!", "success");
+        loadPendingTrades();
       } catch (error) {
         hideLoadingIndicator();
         handleError(error);
@@ -2157,10 +2224,6 @@
       e.preventDefault();
       const eventId = document.getElementById('acceptEventId').value;
       const ticketId = document.getElementById('acceptTicketId').value;
-      if (!eventId || !ticketId) {
-        showAlert("Please fill all fields", "warning");
-        return;
-      }
       try {
         showLoadingIndicator();
         const request = await contract.methods.tradeRequests(eventId, ticketId).call();
