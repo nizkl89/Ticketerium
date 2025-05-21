@@ -4,6 +4,7 @@ Welcome to Ticketerium, a decentralized application (DApp) built on the Ethereum
 
 Try it out:
 [https://nizkl89.github.io/Ticketerium/](https://nizkl89.github.io/Ticketerium/)
+(buggy auto return of incentives)
 
 ## Features
 
